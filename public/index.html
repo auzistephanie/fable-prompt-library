@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fable Prompt Library</title>
+<style>
+  :root{
+    --bg:#f5f1e8; --panel:#fffdf7; --ink:#2b2620; --muted:#8a8070;
+    --accent:#c05e3c; --accent2:#3d6b5e; --gold:#c9a227; --line:#e4dcc9;
+    --code-bg:#2b2620; --code-ink:#f0e9d8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"PingFang HK","Noto Sans HK",-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{padding:26px 24px 14px;max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo-mark{width:42px;height:42px;border-radius:10px;background:var(--panel);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:19px}
+  h1{font-size:20px}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .stats{display:flex;gap:10px}
+  .stat{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:8px 16px;text-align:center}
+  .stat b{display:block;font-size:20px;color:var(--accent)}
+  .stat span{font-size:11.5px;color:var(--muted)}
+  main{max-width:1080px;margin:0 auto;padding:0 24px 48px}
+  .howto{background:#eef3f0;border:1.5px dashed var(--accent2);border-radius:12px;padding:12px 18px;font-size:13.5px;color:#3d5a50;line-height:1.8;margin-bottom:18px}
+  .lib-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .search{flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;background:#fffef9}
+  .chip{border:1.5px solid var(--line);background:#f2ecdd;border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600;color:var(--muted)}
+  .chip.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .card{border:1.5px solid var(--line);border-radius:12px;padding:16px;background:#fffef9;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+  .card:hover{border-color:var(--accent)}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .card h3{font-size:15px;line-height:1.4}
+  .tag{font-size:11px;border-radius:6px;padding:2px 8px;font-weight:700;white-space:nowrap}
+  .t-寫作{background:#fbe3d6;color:#a24326}.t-code網頁{background:#dde9e4;color:#2f5c50}.t-分析{background:#fdf1c7;color:#7a6410}.t-文件{background:#e6e1f2;color:#4c3f80}
+  .meta{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+  .stars{color:var(--gold);letter-spacing:1px}
+  .ver{display:inline-block;background:#e8f0ec;color:var(--accent2);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700}
+  .card-actions{display:flex;gap:8px;margin-top:auto;padding-top:6px}
+  .mini{font-size:12px;border:1.5px solid var(--line);background:transparent;border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--ink)}
+  .mini.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .empty{text-align:center;color:var(--muted);padding:60px 0;font-size:14.5px}
+  /* modal */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(43,38,32,.55);z-index:9;align-items:center;justify-content:center;padding:24px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border-radius:14px;max-width:760px;width:100%;max-height:85vh;overflow:auto;padding:24px;border:2px solid var(--accent)}
+  .modal h2{font-size:17px;margin-bottom:6px}
+  .modal .meta{margin-bottom:12px}
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:18px;font-size:12.5px;line-height:1.75;white-space:pre-wrap;font-family:"SF Mono",Menlo,monospace;margin:10px 0}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+  .btn{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13.5px;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  footer{max-width:1080px;margin:0 auto;padding:14px 24px 40px;color:var(--muted);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-mark">✒️</div>
+    <div><h1>Fable Prompt Library</h1><div class="sub">Loop-engineered prompts for Opus / Sonnet · 最後更新：2026-07-12</div></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="stTotal">0</b><span>條 prompt</span></div>
+    <div class="stat"><b id="stEvolved">0</b><span>已進化</span></div>
+  </div>
+</header>
+<main>
+  <div class="howto">⚡ <b>點用：</b>喺 Fable Prompt project 打你嘅 idea → Claude 自動編譯成 prompt → 講聲「入庫」就會出現喺度。之後可以撳卡片睇全文、一鍵複製。想改良就同 Claude 講「呢條 prompt 出得好／唔好，因為…」，佢會進化 v2 並更新呢頁。</div>
+  <div class="lib-toolbar">
+    <input class="search" id="q" placeholder="🔍 搜尋 prompt…" oninput="render()">
+    <span class="chip on" data-t="全部" onclick="pick(this)">全部</span>
+    <span class="chip" data-t="寫作" onclick="pick(this)">寫作</span>
+    <span class="chip" data-t="code網頁" onclick="pick(this)">Code／網頁</span>
+    <span class="chip" data-t="分析" onclick="pick(this)">分析</span>
+    <span class="chip" data-t="文件" onclick="pick(this)">文件</span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">📭 呢個分類未有 prompt — 去同 Claude 打個 idea 先！</div>
+</main>
+<div class="overlay" id="ov" onclick="if(event.target===this)ov.classList.remove('show')">
+  <div class="modal">
+    <h2 id="mTitle"></h2>
+    <div class="meta" id="mMeta"></div>
+    <pre id="mPrompt"></pre>
+    <div class="meta" id="mAssump"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="ov.classList.remove('show')">關閉</button>
+      <button class="btn" onclick="copyP(this)">📋 複製 prompt</button>
+    </div>
+  </div>
+</div>
+<footer>Fable Prompt Compiler · 由 fable-prompt skill 自動生成 · 數據來源：project docs / prompt-library</footer>
+<script>
+// LIBRARY_DATA is injected by the skill from prompt-library/ project docs.
+const LIBRARY_DATA = [{"title": "LinkedIn post — AI 入門課程（轉行客群）", "type": "寫作", "idea": "幫我變做 prompt：想要一篇介紹 Venturenix Lab 十月新開嘅 AI 入門課程嘅 LinkedIn post，目標吸引想轉行嘅在職人士", "date": "2026-07-12", "version": 2, "used": 1, "score": 4, "note": "Hook 好掂，貼出嚟有留言／查詢，但 CTA 嗰句「留言、DM 或 click」太含糊，好多人唔知實際要留言講咩，白白流失咗互動 → v2 已將 CTA 收窄到要求具體關鍵字", "prompt": "【角色】你係一位資深職涯轉型顧問兼科技教育機構嘅內容主管，喺香港做咗多年 corporate training 同課程 marketing，好清楚在職人士對「AI 課程廣告」嘅免疫力有幾高，亦深明想轉行嘅人真正擔心嘅係咩：年齡、人工重新起步、驚自己冇 technical 底學唔嚟。\n\n【任務】寫一篇 LinkedIn post，介紹 Venturenix Lab 十月新開嘅 AI 入門課程，令一個諗緊轉行嘅香港在職人士睇完會想查詢或報名。\n\n【課程資料】（有 [ ] 嘅位發帖前要換成真實資料，唔可以照咁出街）\n- 開課日期：[十月 X 日]\n- 上課形式：[晚間／週末、實體／網上、共 X 堂]\n- 學費／優惠：[早鳥價或資助計劃]\n- 學完做到啲咩：[e.g. 自己砌到第一個 AI 應用／識用 AI 做 X]\n- 報名方式：[link／DM／留言]\n\n【規格】\n- 受眾：25–40 歲香港在職人士，諗緊轉行入 tech／AI 相關工種，每日喺 LinkedIn 見十個課程廣告，一眼認得 hard-sell\n- 語氣：廣東話為主、行業字眼可用英文；似行內人分享一個觀察同機會，唔似課程 sales 稿\n- 開頭三行（LinkedIn 撳 \"…more\" 之前）：必須係一個關於轉行嘅共鳴位或反直覺觀察，呢三行唔可以出現「課程」「報名」「Venturenix」字眼\n- 結構：共鳴 hook → 點解而家係轉行入場嘅時機（要有具體理由，唔可以只係「AI 好紅」）→ 課程點樣解決轉行者嘅實際障礙 → 一個清晰 CTA\n- 長度：200–300 中文字，段落要短，每段唔超過 3 行\n- CTA 要具體到「留言邊個字/答邊條問題」，唔可以淨係「留言查詢」咁含糊 —— 例如「留言『轉行』畀你課程大綱」；DM 或 click 二選一時都要講明點做（唔好三樣齊叫）\n- Emoji 全篇 ≤3 個，唔可以每段一個\n- 禁止：「把握 AI 浪潮」「唔好被時代淘汰」呢類恐嚇式講法；「I'm humbled/excited to announce」開場；「零基礎都學得識」呢類空泛保證（要用具體 outcome 代替）；感嘆號連發；AI 腔（「總括嚟講」「值得一提」）\n\n【質量標準 Rubric】\n① Hook 強度 — 首三行喺 feed 度會唔會令一個諗緊轉行嘅人停手指？定係一睇就知係廣告？\n② 具體密度 — 有冇至少兩個「唔識呢行寫唔出」嘅細節（轉行者真實痛點、課程具體 outcome）？\n③ 語感真實度 — 讀出嚟似唔似真人喺 LinkedIn 分享？定係似官方 marketing 稿？\n④ 轉行針對性 — 內容係咪對住「想轉行」呢個動機講，而唔係普通「大家嚟學 AI」推廣？\n⑤ CTA 可行度 — 結尾嗰個行動有冇具體到寫低「留言邊個字」嘅程度？一個仲猶豫緊嘅人會唔會真係做？\n\n【Self-Refine Loop】（必須執行，唔可以跳過）\n1. 出第一稿\n2. 用上面 rubric 逐項自評並寫低分數（1–5）\n3. 任何一項 <4 分 → 針對嗰項改寫\n4. 重複步驟 2–3 直到全部 ≥4 分\n5. 只輸出最終版 + 一行總結你改咗咩\n\n【輸出格式】\n- 直接出成篇 post 內文，可以原封不動 copy 上 LinkedIn；3–5 個 hashtag 放最尾\n- 課程資料未補嘅 [ ] 位照保留，等發帖者自己填\n- 最後另起一行：一句總結 self-refine 改咗啲咩", "assumptions": "受眾設定為 25–40 歲想轉行入 tech 嘅香港在職人士；post 用廣東話為主中英夾雜；長度 200–300 字；課程日期、形式、學費你未提供，所以 prompt 入面留咗 [ ] placeholder 畀你（或目標 model）發帖前補上。v2 新增：CTA 一定要具體到指定留言關鍵字。"}, {"title": "定價分析 — HK AI 課程市場", "type": "分析", "idea": "幫我整條 prompt 畀 Opus 用：分析香港 AI 課程市場，我想知我哋 Venturenix Lab 啲課程定價係咪太貴", "date": "2026-07-12", "version": 1, "used": 0, "score": 0, "note": "測試產出，未實戰", "prompt": "【角色】\n你係一位資深嘅香港成人教育市場策略顧問，做過十年以上課程定價同競爭分析，深入了解香港 IT/AI 培訓市場嘅主要玩家（例如 Preface、Xccelerate、Tecky Academy、General Assembly、HKU SPACE 呢類機構）、CEF 持續進修基金點樣影響學員嘅實際付款價，以及「自費轉行學員」同「公司出錢在職進修」兩類客嘅付款意欲差異。\n\n【任務】\n分析香港 AI/data 課程市場嘅定價格局，直接回答一個決策問題：Venturenix Lab 而家嘅課程定價係咪偏貴？如果係，應該點調整？\n\n【規格】\n- 決策脈絡：呢份分析係畀 Venturenix Lab 管理層決定「維持 / 加價 / 減價 / 重新包裝」用，唔係對外 marketing 內容\n- Venturenix Lab 內部數據（課程名、時數、定價、目標客群）：\n  【喺度貼上你哋嘅課程列表＋定價。如果冇貼，你必須用 web search 搵 Venturenix Lab 官網嘅公開價，並標明「來源：官網＋擷取日期」】\n- 用 web search 搵至少 5 個香港市場直接競爭對手嘅現行公開價格；每個數字都要標來源（官網連結＋日期），搵唔到確實價就標「估算」＋估算依據\n- 比較維度固定用呢五個，唔好自創：① 總學費 ② 每小時單價 ③ 課程時數／深度 ④ CEF 或其他資助後嘅實付價 ⑤ 就業支援／成果承諾\n- 唔准只比 headline price — 資助後實付價先係學員真正比較緊嘅數\n- 「貴唔貴」要分開兩類客群答：自費轉行學員、公司出錢嘅在職進修\n- 列明所有假設，並明確指出：邊一個假設如果錯咗，結論會反轉\n- 結尾必須落注：明確 recommendation（維持／加／減／重新定位）＋ confidence level（高/中/低）＋ 如果要調整，具體調幾多（金額或百分比）\n- 禁止：「一方面…另一方面」式和稀泥結論；冇來源嘅數字；每個對手優缺點數量刻意平均嘅比較表；trace 唔返落數據嘅結論句\n\n【質量標準 Rubric】\n① 決策相關性 — 管理層睇完可唔可以直接開會拍板？定係仲要自己再做功課？\n② 數據紀律 — 每一個價格數字係咪都有來源連結，或者「估算＋依據」標記？\n③ Assumption 透明度 — 假設有冇列晒？有冇指明最危險嗰個假設？\n④ 反方測試 — 有冇認真砌過「其實唔貴」嘅 case，並且逐點回應咗？\n⑤ 落注勇氣 — recommendation 有冇具體數字（調整幅度／目標價位），定係萬能 key？\n\n【Self-Refine Loop】（必須執行，唔可以跳過）\n1. 出第一稿分析\n2. 用上面 rubric 逐項自評並寫低分數（1–5）\n3. 額外一步：扮一個反對你結論嘅 Venturenix Lab 董事，寫低佢最強嘅三個攻擊位\n4. 任何一項 <4 分，或者有攻擊位未回應 → 針對嗰度改寫\n5. 重複步驟 2–4 直到全部 ≥4 分，而且三個攻擊位都有回應\n6. 只輸出最終版＋一行總結你改咗啲咩\n\n【輸出格式】\n1. Executive Summary（半頁內：一句結論＋recommendation＋confidence level）\n2. 市場價格比較表（5 個維度 × 各競爭對手，連來源）\n3. 兩類客群嘅「貴唔貴」判斷\n4. 假設清單＋最危險假設\n5. 反方觀點及回應\n6. 行動建議（具體定價／包裝調整＋優先次序）\n全文用廣東話書寫，比較表可以中英夾雜。", "assumptions": "假設咗係內部定價決策分析（唔係對外內容）；你未提供內部價目，所以 prompt 留咗個【貼上課程列表】位，冇貼佢會自己上網搵官網公開價；假設 Opus 有 web search；競爭對手比較基準定咗 5 間、五個固定維度（包 CEF 後實付價）；客群分「自費轉行」同「公司付費」兩類；輸出係廣東話、Exec Summary＋全文分析格式。有邊個唔啱，一句話同我講，我即刻改。"}, {"title": "IG Reels — AI 入門課程（畢業生客群）", "type": "寫作", "idea": "幫我諗個 IG Reels 腳本，介紹 Venturenix Lab 嘅 AI 入門課程，想吸引啱啱畢業想入行嘅後生仔", "date": "2026-07-12", "version": 1, "used": 0, "score": 0, "note": "測試產出，未實戰", "prompt": "【角色】你係一位資深短影片內容策劃，專門為教育機構製作病毒式 IG Reels，深諳 Gen Z 滑動習慣、2 秒定生死嘅 hook 心理學，同埋點樣將「報讀課程」呢類反感內容包裝成後生仔會停手指嘅嘢。\n\n【任務】寫一條 IG Reels 腳本（連分鏡），介紹 Venturenix Lab 嘅 AI 入門課程，目標係令一個啱啱畢業、諗緊點入行嘅後生仔睇完想了解多啲或者分享畀朋友。\n\n【課程資料】（有 [ ] 嘅位開拍前要換成真實資料）\n- 開課日期：[ ]　　- 上課形式：[晚間／週末、實體／網上]　　- 學費／優惠：[ ]\n- 學完做到啲咩：[e.g. 自己砌到第一個 AI 應用]　　- 報名方式：[link／DM／留言]\n\n【規格】\n- 受眾：22–26 歲香港應屆/近畢業生，滑 Reels 速度快，對「報讀課程」廣告有反射性跳過\n- 語氣：似同輩踢爆一個佢哋唔知嘅嘢，唔似機構宣傳片；可以用少量潮語但唔好用力過猛\n- 畫面全部用直向 9:16 構圖諗\n- Hook 硬性要求：0–2 秒之內要有畫面+一句字幕同時到位嘅懸念/反直覺觀察，唔可以先講「大家好」先入正題\n- 節奏：15–30 秒，分鏡用「時間點 + 畫面內容 + 口白/字幕」三欄表示\n- 字幕紀律：全片必須有字幕（大部分人靜音睇），字幕要短，一屏一個意思\n- 結構：Hook（0–2s）→ 痛點或迷思（2–8s）→ 課程點樣解（8–20s）→ CTA（20–30s）\n- CTA：一個動作，並且要具體到「留言邊個字/答邊條問題」（唔可以淨係「留言查詢」咁含糊），例如「留言『AI』畀你課程大綱」；click bio link 作為次選\n- 拍攝可行性：分鏡要用一般手機 + 一兩個人就影到嘅畫面，唔好寫需要專業器材/多人現場嘅 shot\n- 禁止：「大家好，我係Venturenix Lab」慢熱開場；企業感旁白；「零基礎都學得識」空泛保證；字幕塞滿成句唔留白\n\n【質量標準 Rubric】\n① 2 秒測試 — 靜音、快速掃過，首 2 秒會唔會令人停手指？\n② 字幕獨立可讀 — 淨睇字幕（冇聲）可唔可以理解成個內容？\n③ 語感真實度 — 讀出嚟似唔似同輩講嘢，定係似廣告旁白？\n④ 拍攝可行性 — 每個分鏡用手機+一兩個人係咪真係影到？\n⑤ CTA 清晰度 — 個 action 有冇具體到寫低「留言邊個字」嘅程度？\n\n【Self-Refine Loop】（必須執行，唔可以跳過）\n1. 出第一稿分鏡腳本\n2. 用上面 rubric 逐項自評並寫低分數（1–5）\n3. 任何一項 <4 分 → 針對嗰項改寫\n4. 重複步驟 2–3 直到全部 ≥4 分\n5. 只輸出最終版 + 一行總結你改咗咩\n\n【輸出格式】\n- 用表格列分鏡：時間點｜畫面內容｜口白/字幕\n- 表格後加一行：建議嘅 IG caption（連 3–5 個 hashtag）\n- 最後一行：一句總結 self-refine 改咗啲咩", "assumptions": "受眾定為 22–26 歲近畢業生；Reels 長度 15–30 秒、直向 9:16；課程細節（日期/學費/形式）你未講，留咗 [ ] placeholder；CTA 具體關鍵字要求套用咗 lessons.md 度嘅 2026-07-12 教訓。"}];
+let cur='全部';
+const grid=document.getElementById('grid'), empty=document.getElementById('empty'), ov=document.getElementById('ov');
+function stars(n){return n?('★'.repeat(n)+'☆'.repeat(5-n)):'未評'}
+function pick(el){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');cur=el.dataset.t;render()}
+function render(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const items=LIBRARY_DATA.filter(p=>(cur==='全部'||p.type===cur)&&(!q||(p.title+p.idea+p.note).toLowerCase().includes(q)));
+  document.getElementById('stTotal').textContent=LIBRARY_DATA.length;
+  document.getElementById('stEvolved').textContent=LIBRARY_DATA.filter(p=>p.version>1).length;
+  grid.innerHTML=items.map((p,i)=>`
+    <div class="card" onclick="openM(${LIBRARY_DATA.indexOf(p)})">
+      <div class="card-top"><h3>${p.title}</h3><span class="tag t-${p.type}">${p.type==='code網頁'?'Code／網頁':p.type}</span></div>
+      <div class="meta"><span class="stars">${stars(p.score)}</span><span>用過 ${p.used} 次</span><span>${p.date}</span>${p.version>1?`<span class="ver">v${p.version} 已進化</span>`:''}</div>
+      <div class="meta">${p.note?('效果筆記：「'+p.note+'」'):'未有效果筆記'}</div>
+      <div class="card-actions"><button class="mini primary" onclick="event.stopPropagation();copyCard(${LIBRARY_DATA.indexOf(p)},this)">📋 複製</button><button class="mini" onclick="event.stopPropagation();openM(${LIBRARY_DATA.indexOf(p)})">👁 全文</button></div>
+    </div>`).join('');
+  empty.style.display=items.length?'none':'block';
+}
+let curP=null;
+function openM(i){
+  curP=LIBRARY_DATA[i];
+  document.getElementById('mTitle').textContent=curP.title;
+  document.getElementById('mMeta').innerHTML=`<span>原始 idea：「${curP.idea}」</span><span>${curP.date}</span><span>v${curP.version}</span>`;
+  document.getElementById('mPrompt').textContent=curP.prompt;
+  document.getElementById('mAssump').textContent=curP.assumptions?('📌 Assumptions: '+curP.assumptions):'';
+  ov.classList.add('show');
+}
+function copyP(btn){navigator.clipboard.writeText(curP.prompt).then(()=>{btn.textContent='✅ 已複製';setTimeout(()=>btn.textContent='📋 複製 prompt',1500)})}
+function copyCard(i,btn){navigator.clipboard.writeText(LIBRARY_DATA[i].prompt).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋 複製',1200)})}
+render();
+</script>
+</body>
+</html>
