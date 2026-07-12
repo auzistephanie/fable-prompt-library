@@ -85,7 +85,7 @@ def get_token(remote_token):
     return remote_token  # legacy fallback only — embedding tokens in remote URL is discouraged
 
 
-def api(method, path, token, body=None):
+def api(method, path, token, body=None, ok_statuses=()):
     url = path if path.startswith("http") else API + path
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
@@ -96,6 +96,8 @@ def api(method, path, token, body=None):
         with urllib.request.urlopen(req) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
+        if e.code in ok_statuses:
+            return None  # caller handles this expected case (e.g. brand-new empty repo)
         raise SystemExit(f"❌ GitHub API {method} {path} -> {e.code}\n{e.read().decode()}")
 
 
@@ -154,10 +156,16 @@ def main():
         raise SystemExit("❌ 揾唔到 GitHub token（.env GITHUB_TOKEN / 環境變數 / .gh-token）")
 
     base = f"/repos/{owner}/{repo}/git"
-    ref = api("GET", f"{base}/ref/heads/main", token)
-    base_sha = ref["object"]["sha"]
-    base_tree = api("GET", f"{base}/commits/{base_sha}", token)["tree"]["sha"]
-    remote = remote_tree_map(base, base_tree, token)
+    # 404 = branch doesn't exist yet; 409 "Git Repository is empty." = brand-new repo,
+    # zero commits — GitHub returns either depending on repo state. Both mean: bootstrap.
+    ref = api("GET", f"{base}/ref/heads/main", token, ok_statuses=(404, 409))
+    is_empty_repo = ref is None
+    if is_empty_repo:
+        base_sha, base_tree, remote = None, None, {}
+    else:
+        base_sha = ref["object"]["sha"]
+        base_tree = api("GET", f"{base}/commits/{base_sha}", token)["tree"]["sha"]
+        remote = remote_tree_map(base, base_tree, token)
 
     local = working_files()
     local_set = set(local)
@@ -180,17 +188,30 @@ def main():
         tree.append({"path": path, "mode": "100644", "type": "blob", "sha": None})
 
     if not tree:
+        if is_empty_repo:
+            print("Nothing to push — 冇任何檔案（空 repo 亦冇本地檔案可以 bootstrap）。")
+            return
         print("Nothing to push — 遠端已同步。")
         sync_local_head(base_sha, owner, repo, token)
         return
 
-    new_tree = api("POST", f"{base}/trees", token, {"base_tree": base_tree, "tree": tree})
-    commit = api("POST", f"{base}/commits", token, {
-        "message": message, "tree": new_tree["sha"], "parents": [base_sha],
-    })
-    api("PATCH", f"{base}/refs/heads/main", token, {"sha": commit["sha"]})
+    tree_body = {"tree": tree}
+    if base_tree:
+        tree_body["base_tree"] = base_tree
+    new_tree = api("POST", f"{base}/trees", token, tree_body)
 
-    print(f"✅ Pushed to GitHub — {message}")
+    commit_body = {"message": message, "tree": new_tree["sha"]}
+    if base_sha:
+        commit_body["parents"] = [base_sha]
+    commit = api("POST", f"{base}/commits", token, commit_body)
+
+    if is_empty_repo:
+        # Repo has no refs at all yet — create refs/heads/main instead of PATCHing it.
+        api("POST", f"{base}/refs", token, {"ref": "refs/heads/main", "sha": commit["sha"]})
+    else:
+        api("PATCH", f"{base}/refs/heads/main", token, {"sha": commit["sha"]})
+
+    print(f"✅ Pushed to GitHub — {message}" + (" (首次 bootstrap)" if is_empty_repo else ""))
     print(f"   {uploaded} 更新 / {len(deletions)} 刪除 · commit {commit['sha'][:7]}")
     sync_local_head(commit["sha"], owner, repo, token)
 
